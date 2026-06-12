@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+coverage.json
+config.json
+.DS_Store
