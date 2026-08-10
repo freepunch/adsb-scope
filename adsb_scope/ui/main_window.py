@@ -1,5 +1,5 @@
 """Main window: status bar + tabs for scope, traffic table, and coverage."""
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import QMainWindow, QTabWidget
 
 from .scope_view import ScopeView
@@ -8,8 +8,9 @@ from .coverage_view import CoverageView
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, store, client, tracker, cfg):
+    def __init__(self, store, client, tracker, cfg, gps=None):
         super().__init__()
+        self.gps = gps
         self.store = store
         self.client = client
         self.tracker = tracker
@@ -39,12 +40,27 @@ class MainWindow(QMainWindow):
 
     def _update_status(self):
         state = "connected" if self.client.connected else "reconnecting…"
+        gps_state = ""
+        if self.gps is not None:
+            gps_state = ("   GPS: fix" if self.gps.has_fix else "   GPS: searching…")
         self.statusBar().showMessage(
             f"{self.client.host}:{self.client.port}  [{state}]   "
             f"aircraft: {len(self.store.snapshot())}   "
-            f"messages: {self.store.message_count:,}")
+            f"messages: {self.store.message_count:,}"
+            f"{gps_state}   "
+            f"pos: {self.store.home_lat:.3f}, {self.store.home_lon:.3f}")
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_F11:
+            self.showNormal() if self.isFullScreen() else self.showFullScreen()
+        elif event.key() == Qt.Key_Escape and self.isFullScreen():
+            self.showNormal()
+        else:
+            super().keyPressEvent(event)
 
     def closeEvent(self, event):
         self.tracker.save()
         self.client.stop()
+        if self.gps is not None:
+            self.gps.stop()
         super().closeEvent(event)

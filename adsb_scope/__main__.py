@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QApplication
 from . import config
 from .aircraft import AircraftStore
 from .coverage import CoverageTracker
+from .gps_client import GPSClient
 from .sbs_client import SBSClient
 from .ui.main_window import MainWindow
 
@@ -17,9 +18,17 @@ def main():
     client = SBSClient(cfg.host, cfg.port, store)
     client.start()
 
+    gps = None
+    if cfg.gps_enabled:
+        gps = GPSClient(on_fix=store.set_home)
+        gps.start()
+
     app = QApplication(sys.argv)
-    window = MainWindow(store, client, tracker, cfg)
-    window.show()
+    window = MainWindow(store, client, tracker, cfg, gps=gps)
+    if cfg.fullscreen or "--fullscreen" in sys.argv:
+        window.showFullScreen()
+    else:
+        window.show()
     sys.exit(app.exec())
 
 

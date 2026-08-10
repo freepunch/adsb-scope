@@ -41,6 +41,17 @@ class AircraftStore:
         self.stale_seconds = stale_seconds
         self.message_count = 0
 
+    def set_home(self, lat: float, lon: float):
+        """Move the reference position (e.g. a GPS fix) and recompute
+        range/bearing for everything currently tracked."""
+        with self._lock:
+            self.home_lat = lat
+            self.home_lon = lon
+            for ac in self._aircraft.values():
+                if ac.has_position:
+                    ac.dist_nm = haversine_nm(lat, lon, ac.lat, ac.lon)
+                    ac.bearing = bearing_deg(lat, lon, ac.lat, ac.lon)
+
     def update(self, hex_id: str, **fields) -> Aircraft:
         with self._lock:
             ac = self._aircraft.setdefault(hex_id, Aircraft(hex_id=hex_id))

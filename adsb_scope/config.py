@@ -16,6 +16,8 @@ class Config:
     max_range_nm: float = 100.0  # scope radius
     stale_seconds: float = 30.0  # drop aircraft not heard for this long
     coverage_bucket_deg: int = 5 # polar coverage resolution
+    gps_enabled: bool = False    # read position from gpsd (cyberdeck mode)
+    fullscreen: bool = False     # start as a fullscreen kiosk
 
 
 def load() -> Config:

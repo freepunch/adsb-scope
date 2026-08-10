@@ -80,6 +80,27 @@ def test_coverage_records_max(tmp_path=None):
     cov.COVERAGE_PATH.unlink()
 
 
+
+
+def test_parse_gpsd_tpv():
+    from adsb_scope.gps_client import parse_gpsd_line
+    good = '{"class":"TPV","mode":3,"lat":45.4642,"lon":9.1900}'
+    assert parse_gpsd_line(good) == (45.4642, 9.1900)
+    assert parse_gpsd_line('{"class":"TPV","mode":1}') is None      # no fix
+    assert parse_gpsd_line('{"class":"SKY"}') is None               # wrong class
+    assert parse_gpsd_line('not json at all') is None
+
+
+def test_set_home_recomputes():
+    store = AircraftStore(40.0, -76.0, stale_seconds=30)
+    store.update("abc123", lat=41.0, lon=-76.0)
+    d_before = store.snapshot()[0].dist_nm
+    store.set_home(42.0, -76.0)   # jump home north of the aircraft
+    ac = store.snapshot()[0]
+    assert abs(ac.bearing - 180.0) < 0.5           # aircraft now due south
+    assert abs(ac.dist_nm - d_before) < 1.0        # still ~60 nm away
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for fn in fns:
