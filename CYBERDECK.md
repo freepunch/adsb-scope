@@ -23,8 +23,17 @@ lid hinge side with a printed cable clamp so they flex, not snag.
 - spare stubby antenna + coiled pigtail storage
 
 **Antenna**, two options, honest tradeoff:
-1. SMA bulkhead through the case wall + external stubby: best
-   reception, military look, but drilling ends the IP65 rating.
+1. Sealed SMA feedthrough + external stubby: best reception,
+   military look, and weatherproofing preserved by sealing the
+   penetration. Use an SMA bulkhead with an O-ring under the flange
+   nut (IP67-rated feedthroughs exist), or pass the pigtail through
+   an IP68 cable gland (PG7/M12) and terminate outside. Drill a
+   flat, unribbed section of wall so the gasket seats evenly, and
+   cap the connector with a rubber SMA dust cap when no antenna is
+   fitted. Honest caveat: the factory IP65 certification no longer
+   applies once the shell is drilled, but a properly seated gland
+   is splash- and dust-tight in practice, and the purge valve still
+   does its job.
 2. Internal printed mast near the hinge that stands the stubby
    vertical when the lid is open: keeps the case sealed, costs some
    signal when aircraft are low on the horizon.
