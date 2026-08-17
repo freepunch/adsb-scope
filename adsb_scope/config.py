@@ -18,6 +18,7 @@ class Config:
     coverage_bucket_deg: int = 5 # polar coverage resolution
     gps_enabled: bool = False    # read position from gpsd (cyberdeck mode)
     fullscreen: bool = False     # start as a fullscreen kiosk
+    render_fps: int = 25         # scope redraw rate; lower to ~15 on a Pi 3
 
 
 def load() -> Config:

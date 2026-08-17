@@ -16,7 +16,7 @@ Waveshare 7" (C) face-out. Wires (HDMI + touch + power) run down the
 lid hinge side with a printed cable clamp so they flex, not snag.
 
 **Base**: a printed deck plate with bays for:
-- Raspberry Pi 4 (ports facing the hinge gap)
+- Raspberry Pi 4 or Pi 3B/3B+ (ports facing the hinge gap; see Pi 3 notes)
 - Anker 323 in a snap cradle (removable to recharge)
 - RTL-SDR clipped away from the Pi (both run warm)
 - USB GPS puck (VK-162 style) flat against the deck, sky side up
@@ -50,6 +50,20 @@ Pi USB-A ----> GPS puck
 ```
 
 Runtime: ~10 W average from ~30 usable Wh, so 2.5 to 3 hours.
+
+## Pi 3 notes (works fine, three differences)
+
+- Full-size HDMI port (not micro-HDMI) and micro-USB power input
+  (not USB-C): buy cables accordingly. Power draw is lighter than a
+  Pi 4, so the Anker budget gets easier.
+- 1 GB RAM: use Raspberry Pi OS Lite 64-bit and launch the app under
+  a minimal Wayland kiosk compositor (cage) instead of the full
+  desktop: `sudo apt install cage python3-pyside6.qtwidgets` then run
+  `cage -- python3 -m adsb_scope` from a systemd unit. The apt
+  PySide6 avoids pip wheel issues on ARM.
+- Slower CPU with software rendering: set `"render_fps": 15` in
+  config.json. The sweep speed stays constant; it just redraws less
+  often.
 
 ## OS setup (Raspberry Pi OS Bookworm 64-bit desktop)
 

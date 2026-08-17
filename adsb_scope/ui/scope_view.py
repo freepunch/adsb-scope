@@ -13,17 +13,19 @@ TEXT = QColor(220, 220, 220)
 
 
 class ScopeView(QWidget):
-    def __init__(self, store, max_range_nm: float, parent=None):
+    def __init__(self, store, max_range_nm: float, render_fps: int = 25, parent=None):
         super().__init__(parent)
         self.store = store
         self.max_range_nm = max_range_nm
         self.sweep_angle = 0.0
+        fps = max(5, min(render_fps, 60))
+        self._step = 60.0 / fps  # constant 60 deg/sec sweep at any fps
         timer = QTimer(self)
         timer.timeout.connect(self._tick)
-        timer.start(40)  # ~25 fps
+        timer.start(int(1000 / fps))
 
     def _tick(self):
-        self.sweep_angle = (self.sweep_angle + 2.4) % 360
+        self.sweep_angle = (self.sweep_angle + self._step) % 360
         self.update()
 
     def _polar_to_xy(self, cx, cy, radius, bearing, dist_nm):

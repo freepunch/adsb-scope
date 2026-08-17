@@ -18,7 +18,7 @@ class MainWindow(QMainWindow):
         self.resize(900, 700)
 
         tabs = QTabWidget()
-        tabs.addTab(ScopeView(store, cfg.max_range_nm), "Scope")
+        tabs.addTab(ScopeView(store, cfg.max_range_nm, cfg.render_fps), "Scope")
         tabs.addTab(TableView(store), "Traffic")
         tabs.addTab(CoverageView(tracker), "Coverage")
         self.setCentralWidget(tabs)
