@@ -67,6 +67,12 @@ and restart:
 - **Coverage** — polar max-range-per-bearing plot with a reset button for
   starting a new antenna test; persists to `coverage.json` across runs
 
+## Testing without an SDR
+
+`python tools/fake_feed.py` serves simulated traffic on port 30003.
+Run it in one terminal and `python -m adsb_scope` in another, and the
+scope populates with fake aircraft near the configured home position.
+
 ## Tests
 
 ```bash
