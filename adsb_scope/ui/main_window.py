@@ -7,7 +7,24 @@ from .scope_view import ScopeView
 from .detail_panel import DetailPanel
 from .coverage_view import CoverageView
 
-DARK = "background-color:#0a0e0b;"
+NEON = "#00ff88"
+DARK = f"""
+QMainWindow, QWidget {{ background-color: #060a08; }}
+QStatusBar {{ color: {NEON}; font-size: 12px; }}
+"""
+NAV_CSS = f"""
+QPushButton {{
+    background-color: #0d1a12;
+    color: {NEON};
+    border: 1px solid #1d5c3a;
+    font-weight: bold;
+    letter-spacing: 2px;
+    font-size: 14px;
+    padding: 0 22px;
+}}
+QPushButton:checked {{ background-color: #1d5c3a; color: #ffffff; }}
+QPushButton:pressed {{ background-color: #2a7a4f; color: #ffffff; }}
+"""
 
 
 class MainWindow(QMainWindow):
@@ -50,8 +67,9 @@ class MainWindow(QMainWindow):
         self.radar_btn = QPushButton("RADAR")
         self.cov_btn = QPushButton("COVERAGE")
         for btn in (self.radar_btn, self.cov_btn):
-            btn.setMinimumHeight(40)
+            btn.setMinimumHeight(42)
             btn.setCheckable(True)
+            btn.setStyleSheet(NAV_CSS)
         self.radar_btn.setChecked(True)
         self.radar_btn.clicked.connect(lambda: self._show_page(0))
         self.cov_btn.clicked.connect(lambda: self._show_page(1))

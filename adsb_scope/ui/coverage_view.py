@@ -9,7 +9,7 @@ BG = QColor(10, 10, 14)
 RING = QColor(70, 70, 90)
 FILL = QColor(0, 160, 220, 70)
 EDGE = QColor(0, 200, 255)
-TEXT = QColor(220, 220, 220)
+TEXT = QColor(255, 255, 255)
 
 
 class CoverageView(QWidget):
@@ -19,7 +19,14 @@ class CoverageView(QWidget):
         layout = QVBoxLayout(self)
         bar = QHBoxLayout()
         self.status = QLabel()
-        reset_btn = QPushButton("Reset (new antenna test)")
+        self.status.setStyleSheet("color:#00ff88; font-size:13px; font-weight:bold;")
+        reset_btn = QPushButton("RESET (NEW ANTENNA TEST)")
+        reset_btn.setMinimumHeight(38)
+        reset_btn.setStyleSheet(
+            "QPushButton { background-color:#0d1a12; color:#00ff88;"
+            " border:1px solid #1d5c3a; border-radius:4px; font-weight:bold;"
+            " letter-spacing:1px; padding:0 14px; }"
+            "QPushButton:pressed { background-color:#1d5c3a; color:#ffffff; }")
         reset_btn.clicked.connect(self.tracker.reset)
         bar.addWidget(self.status)
         bar.addStretch()

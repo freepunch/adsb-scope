@@ -10,9 +10,45 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QPushButton, QStackedWidget, QTableWidget,
                                QTableWidgetItem, QHeaderView, QGridLayout)
 
-HEADER_CSS = "color:#9ae6a0; font-weight:bold; letter-spacing:1px;"
-VALUE_CSS = "color:#e6ece6; font-size:15px;"
-KEY_CSS = "color:#7f8c7f; font-size:11px;"
+NEON = "#00ff88"
+HEADER_CSS = f"color:{NEON}; font-weight:bold; letter-spacing:2px; font-size:14px;"
+VALUE_CSS = "color:#ffffff; font-size:17px; font-weight:bold;"
+KEY_CSS = f"color:{NEON}; font-size:11px; letter-spacing:1px;"
+
+# Qt's default table palette is dark-on-dark here; set it explicitly.
+TABLE_CSS = f"""
+QTableWidget {{
+    background-color: #060a08;
+    color: #ffffff;
+    font-size: 15px;
+    gridline-color: #14301f;
+    selection-background-color: #1d5c3a;
+    selection-color: #ffffff;
+    border: none;
+}}
+QHeaderView::section {{
+    background-color: #0d1a12;
+    color: {NEON};
+    font-weight: bold;
+    letter-spacing: 1px;
+    padding: 6px;
+    border: none;
+    border-bottom: 1px solid #14301f;
+}}
+"""
+
+BUTTON_CSS = f"""
+QPushButton {{
+    background-color: #0d1a12;
+    color: {NEON};
+    border: 1px solid #1d5c3a;
+    border-radius: 4px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    font-size: 14px;
+}}
+QPushButton:pressed {{ background-color: #1d5c3a; color: #ffffff; }}
+"""
 
 
 class DetailPanel(QWidget):
@@ -57,6 +93,7 @@ class DetailPanel(QWidget):
         self.table.verticalHeader().setVisible(False)
         self.table.verticalHeader().setDefaultSectionSize(30)  # touch-friendly rows
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.setStyleSheet(TABLE_CSS)
         self.table.cellClicked.connect(self._on_row_clicked)
         lay.addWidget(self.table)
         return page
@@ -69,6 +106,7 @@ class DetailPanel(QWidget):
         top = QHBoxLayout()
         self.back_btn = QPushButton("‹  Back")
         self.back_btn.setMinimumHeight(38)          # touch target
+        self.back_btn.setStyleSheet(BUTTON_CSS)
         self.back_btn.clicked.connect(self.show_list)
         top.addWidget(self.back_btn)
         top.addStretch()
@@ -76,11 +114,11 @@ class DetailPanel(QWidget):
 
         self.detail_call = QLabel("—")
         self.detail_call.setStyleSheet(
-            "color:#ffbe3c; font-size:26px; font-weight:bold;")
+            "color:#ffbe3c; font-size:28px; font-weight:bold; letter-spacing:1px;")
         lay.addWidget(self.detail_call)
 
         self.detail_hex = QLabel("")
-        self.detail_hex.setStyleSheet(KEY_CSS)
+        self.detail_hex.setStyleSheet("color:#ffffff; font-size:12px;")
         lay.addWidget(self.detail_hex)
 
         grid = QGridLayout()

@@ -9,9 +9,9 @@ from ..hittest import polar_to_xy, hit_test
 
 BG = QColor(6, 10, 8)
 RING = QColor(0, 80, 0)
-RING_TEXT = QColor(0, 130, 0)
+RING_TEXT = QColor(0, 235, 120)      # neon green, readable on black
 SWEEP = QColor(0, 210, 0)
-TEXT = QColor(215, 225, 215)
+TEXT = QColor(255, 255, 255)         # aircraft labels: white
 SELECTED = QColor(255, 190, 60)
 
 # altitude bands -> colour (ft, colour); warm = low, cool = high
