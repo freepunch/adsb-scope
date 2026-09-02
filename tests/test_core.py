@@ -101,6 +101,31 @@ def test_set_home_recomputes():
     assert abs(ac.dist_nm - d_before) < 1.0        # still ~60 nm away
 
 
+def test_polar_to_xy_cardinals():
+    from adsb_scope.hittest import polar_to_xy
+    # due north at full range -> straight up from centre
+    x, y = polar_to_xy(100, 100, 50, 60, 0, 60)
+    assert abs(x - 100) < 0.01 and abs(y - 50) < 0.01
+    # due east at half range -> right of centre
+    x, y = polar_to_xy(100, 100, 50, 60, 90, 30)
+    assert abs(x - 125) < 0.01 and abs(y - 100) < 0.01
+
+
+def test_hit_test_picks_nearest_within_tolerance():
+    from adsb_scope.hittest import hit_test
+    positions = {"aaa": (100.0, 100.0), "bbb": (140.0, 100.0)}
+    assert hit_test(103, 102, positions) == "aaa"
+    assert hit_test(138, 101, positions) == "bbb"
+    assert hit_test(300, 300, positions) is None      # far from everything
+
+
+def test_hit_test_tolerance_is_touch_sized():
+    from adsb_scope.hittest import hit_test
+    positions = {"aaa": (100.0, 100.0)}
+    assert hit_test(118, 100, positions) == "aaa"     # 18px off still hits
+    assert hit_test(160, 100, positions) is None      # 60px off does not
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for fn in fns:
