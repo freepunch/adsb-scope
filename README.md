@@ -59,6 +59,9 @@ and restart:
 | home_lat/lon   | YOUR antenna location — set this first   |
 | max_range_nm   | scope radius                             |
 | stale_seconds  | drop aircraft unheard for this long      |
+| hide_cursor    | blank the mouse pointer (default true)   |
+| fullscreen     | start fullscreen (kiosk)                 |
+| render_fps     | scope redraw rate; 15 on a Pi 3          |
 
 ## Tabs
 

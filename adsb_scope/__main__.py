@@ -1,6 +1,7 @@
 """Entry point: python -m adsb_scope"""
 import sys
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 from . import config
@@ -24,6 +25,8 @@ def main():
         gps.start()
 
     app = QApplication(sys.argv)
+    if cfg.hide_cursor:
+        app.setOverrideCursor(Qt.BlankCursor)
     window = MainWindow(store, client, tracker, cfg, gps=gps)
     if cfg.fullscreen or "--fullscreen" in sys.argv:
         window.showFullScreen()
