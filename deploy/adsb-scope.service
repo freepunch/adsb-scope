@@ -1,0 +1,32 @@
+[Unit]
+Description=adsb-scope radar display (kiosk)
+Documentation=https://github.com/freepunch/adsb-scope
+After=systemd-user-sessions.service readsb.service
+Wants=readsb.service
+Conflicts=getty@tty1.service
+After=getty@tty1.service
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/home/%i/adsb-scope
+ExecStart=/usr/bin/cage -- /usr/bin/python3 -m adsb_scope
+
+# PAMName=login makes logind open a real session for this unit, which is
+# what grants it a seat. Without it cage cannot become DRM master and
+# dies with "Could not open target tty: Permission denied".
+PAMName=login
+TTYPath=/dev/tty1
+StandardInput=tty-fail
+StandardOutput=journal
+StandardError=journal
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+
+# Restart on any exit: a field device should never stay dead.
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

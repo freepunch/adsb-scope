@@ -85,6 +85,15 @@ python tests/test_core.py
 Covers the geometry, the SBS parser, state merging/expiry, and coverage
 persistence — everything except the Qt widgets.
 
+## Field deployment
+
+See `deploy/FIELD.md` for boot-start setup, GPS, and making the SD card
+survive power cuts. Short version:
+
+```bash
+sudo bash deploy/install.sh && sudo reboot
+```
+
 ## Roadmap ideas
 
 - Decode Mode S yourself with pyModeS (own the protocol, not just the pixels)
