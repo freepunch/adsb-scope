@@ -61,6 +61,7 @@ class DetailPanel(QWidget):
         super().__init__(parent)
         self.store = store
         self.selected_hex: str | None = None
+        self.range_filter_nm: float | None = None   # set by the scope's zoom
 
         root = QVBoxLayout(self)
         root.setContentsMargins(8, 8, 8, 8)
@@ -176,15 +177,29 @@ class DetailPanel(QWidget):
     def _fmt(value, spec="{}", suffix=""):
         return f"{spec.format(value)}{suffix}" if value is not None else "—"
 
+    def set_range_filter(self, nm: float):
+        """Only list aircraft inside the scope's current range."""
+        self.range_filter_nm = nm
+        self.refresh()
+
+    def _in_range(self, ac) -> bool:
+        if self.range_filter_nm is None:
+            return True
+        return ac.dist_nm is not None and ac.dist_nm <= self.range_filter_nm
+
     def refresh(self):
-        aircraft = self.store.snapshot()
+        aircraft = [a for a in self.store.snapshot() if self._in_range(a)]
         if self.selected_hex is not None:
             self._refresh_detail(aircraft)
         else:
             self._refresh_list(aircraft)
 
     def _refresh_list(self, aircraft):
-        self.list_header.setText(f"TRAFFIC   ({len(aircraft)})")
+        if self.range_filter_nm is not None:
+            self.list_header.setText(
+                f"TRAFFIC   ({len(aircraft)})   \u2264 {self.range_filter_nm:.0f} NM")
+        else:
+            self.list_header.setText(f"TRAFFIC   ({len(aircraft)})")
         self.table.setRowCount(len(aircraft))
         for row, ac in enumerate(aircraft):
             cells = [
@@ -202,7 +217,10 @@ class DetailPanel(QWidget):
                 self.table.setItem(row, col, item)
 
     def _refresh_detail(self, aircraft):
-        ac = next((a for a in aircraft if a.hex_id == self.selected_hex), None)
+        # search the unfiltered set: a selected aircraft stays visible even
+        # if it drifts outside the current range
+        ac = next((a for a in self.store.snapshot()
+                   if a.hex_id == self.selected_hex), None)
         if ac is None:
             self.detail_call.setText("LOST")
             self.detail_hex.setText(f"{self.selected_hex.upper()}  no longer tracked")

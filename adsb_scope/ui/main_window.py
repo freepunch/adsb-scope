@@ -43,6 +43,8 @@ class MainWindow(QMainWindow):
 
         # scope click -> panel detail; panel row click -> scope highlight
         self.scope.aircraft_clicked.connect(self._on_scope_click)
+        self.scope.range_changed.connect(self.panel.set_range_filter)
+        self.panel.set_range_filter(self.scope.max_range_nm)
         self.panel.aircraft_selected.connect(self.scope.set_selected)
         self.panel.selection_cleared.connect(lambda: self.scope.set_selected(None))
 
@@ -122,7 +124,11 @@ class MainWindow(QMainWindow):
             f"pos: {self.store.home_lat:.3f}, {self.store.home_lon:.3f}")
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_F11:
+        if event.key() in (Qt.Key_Plus, Qt.Key_Equal):
+            self.scope.zoom_in()
+        elif event.key() == Qt.Key_Minus:
+            self.scope.zoom_out()
+        elif event.key() == Qt.Key_F11:
             self.showNormal() if self.isFullScreen() else self.showFullScreen()
         elif event.key() == Qt.Key_Escape:
             if self.panel.selected_hex is not None:

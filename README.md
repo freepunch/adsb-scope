@@ -65,7 +65,10 @@ and restart:
 
 ## Tabs
 
-- **Scope** — radar view, north up: blips, velocity vectors, callsign + flight level
+- **Scope** — radar view, north up: aircraft glyphs rotated to track, coloured
+  by altitude band, callsign + flight level. Zoom with the on-screen +/-
+  buttons, the scroll wheel, or the +/- keys; ranges step through
+  5/10/25/50/100/200/400 nm and the traffic list filters to match.
 - **Traffic** — sortable live table, nearest first
 - **Coverage** — polar max-range-per-bearing plot with a reset button for
   starting a new antenna test; persists to `coverage.json` across runs

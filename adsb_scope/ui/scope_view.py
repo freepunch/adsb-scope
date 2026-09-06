@@ -3,7 +3,7 @@ import math
 
 from PySide6.QtCore import Qt, QPointF, QTimer, Signal
 from PySide6.QtGui import QPainter, QPen, QColor, QFont, QPolygonF
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QWidget, QPushButton
 
 from ..hittest import polar_to_xy, hit_test
 
@@ -13,6 +13,21 @@ RING_TEXT = QColor(0, 235, 120)      # neon green, readable on black
 SWEEP = QColor(0, 210, 0)
 TEXT = QColor(255, 255, 255)         # aircraft labels: white
 SELECTED = QColor(255, 190, 60)
+
+# selectable scope ranges in nm, nearest first
+RANGE_STEPS = [5, 10, 25, 50, 100, 200, 400]
+
+ZOOM_BTN_CSS = """
+QPushButton {
+    background-color: rgba(13, 26, 18, 220);
+    color: #00ff88;
+    border: 1px solid #1d5c3a;
+    border-radius: 4px;
+    font-size: 22px;
+    font-weight: bold;
+}
+QPushButton:pressed { background-color: #1d5c3a; color: #ffffff; }
+"""
 
 # altitude bands -> colour (ft, colour); warm = low, cool = high
 ALT_BANDS = [
@@ -37,19 +52,68 @@ class ScopeView(QWidget):
     """Emits the hex id of a tapped aircraft."""
 
     aircraft_clicked = Signal(str)
+    range_changed = Signal(float)
 
     def __init__(self, store, max_range_nm: float, render_fps: int = 25, parent=None):
         super().__init__(parent)
         self.store = store
-        self.max_range_nm = max_range_nm
+        # snap the configured range onto the nearest selectable step
+        self._range_idx = min(
+            range(len(RANGE_STEPS)),
+            key=lambda i: abs(RANGE_STEPS[i] - max_range_nm))
+        self.max_range_nm = float(RANGE_STEPS[self._range_idx])
         self.sweep_angle = 0.0
         self.selected_hex: str | None = None
         self._positions: dict[str, tuple[float, float]] = {}
+
+        # touch-sized zoom controls, bottom-left of the scope
+        self.zoom_in_btn = QPushButton("+", self)
+        self.zoom_out_btn = QPushButton("\u2212", self)
+        for b in (self.zoom_in_btn, self.zoom_out_btn):
+            b.setFixedSize(46, 46)
+            b.setStyleSheet(ZOOM_BTN_CSS)
+            b.setFocusPolicy(Qt.NoFocus)
+        self.zoom_in_btn.clicked.connect(self.zoom_in)
+        self.zoom_out_btn.clicked.connect(self.zoom_out)
+
         fps = max(5, min(render_fps, 60))
         self._step = 60.0 / fps          # constant 60 deg/sec regardless of fps
         timer = QTimer(self)
         timer.timeout.connect(self._tick)
         timer.start(int(1000 / fps))
+
+    # ---------- zoom ----------
+
+    def _apply_range(self, idx: int):
+        idx = max(0, min(idx, len(RANGE_STEPS) - 1))
+        if idx == self._range_idx:
+            return
+        self._range_idx = idx
+        self.max_range_nm = float(RANGE_STEPS[idx])
+        self.zoom_in_btn.setEnabled(idx > 0)
+        self.zoom_out_btn.setEnabled(idx < len(RANGE_STEPS) - 1)
+        self.range_changed.emit(self.max_range_nm)
+        self.update()
+
+    def zoom_in(self):
+        """Tighter range (fewer nm across the scope)."""
+        self._apply_range(self._range_idx - 1)
+
+    def zoom_out(self):
+        self._apply_range(self._range_idx + 1)
+
+    def wheelEvent(self, event):
+        if event.angleDelta().y() > 0:
+            self.zoom_in()
+        else:
+            self.zoom_out()
+
+    def resizeEvent(self, event):
+        margin = 10
+        y = self.height() - 46 - margin
+        self.zoom_in_btn.move(margin, y - 46 - 6)
+        self.zoom_out_btn.move(margin, y)
+        super().resizeEvent(event)
 
     def set_selected(self, hex_id: str | None):
         self.selected_hex = hex_id
@@ -126,6 +190,15 @@ class ScopeView(QWidget):
             rad = math.radians(deg)
             p.drawText(QPointF(cx + (radius + 6) * math.sin(rad) - 4,
                                cy - (radius + 6) * math.cos(rad) + 4), name)
+
+        # current range readout
+        range_font = QFont()
+        range_font.setPointSize(11)
+        range_font.setBold(True)
+        p.setFont(range_font)
+        p.setPen(RING_TEXT)
+        p.drawText(QPointF(10, 20), f"RANGE {self.max_range_nm:.0f} NM")
+        p.setFont(font)
 
         # sweep
         rad = math.radians(self.sweep_angle)

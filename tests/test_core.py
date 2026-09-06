@@ -126,6 +126,57 @@ def test_hit_test_tolerance_is_touch_sized():
     assert hit_test(160, 100, positions) is None      # 60px off does not
 
 
+def test_range_steps_snap_and_zoom():
+    import os
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtWidgets import QApplication
+    from adsb_scope.ui.scope_view import ScopeView, RANGE_STEPS
+    from adsb_scope.aircraft import AircraftStore
+    app = QApplication.instance() or QApplication([])
+    store = AircraftStore(40.0, -76.0)
+
+    # a configured 100 nm snaps onto the 100 step
+    sv = ScopeView(store, 100.0, 15)
+    assert sv.max_range_nm == 100.0
+
+    # an odd configured value snaps to the nearest step
+    sv2 = ScopeView(store, 60.0, 15)
+    assert sv2.max_range_nm == 50.0
+
+    # zoom in tightens, zoom out widens
+    start = sv.max_range_nm
+    sv.zoom_in()
+    assert sv.max_range_nm < start
+    sv.zoom_out()
+    assert sv.max_range_nm == start
+
+    # clamps at both ends rather than running off the list
+    for _ in range(20):
+        sv.zoom_in()
+    assert sv.max_range_nm == float(RANGE_STEPS[0])
+    for _ in range(20):
+        sv.zoom_out()
+    assert sv.max_range_nm == float(RANGE_STEPS[-1])
+
+
+def test_range_filter_hides_distant_aircraft():
+    import os
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtWidgets import QApplication
+    from adsb_scope.ui.detail_panel import DetailPanel
+    from adsb_scope.aircraft import AircraftStore
+    app = QApplication.instance() or QApplication([])
+    store = AircraftStore(40.0, -76.0)
+    store.update("near1", lat=40.1, lon=-76.0)    # ~6 nm
+    store.update("far1", lat=41.0, lon=-76.0)     # ~60 nm
+
+    panel = DetailPanel(store)
+    panel.set_range_filter(200)
+    assert panel.table.rowCount() == 2
+    panel.set_range_filter(25)
+    assert panel.table.rowCount() == 1             # far one filtered out
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for fn in fns:
