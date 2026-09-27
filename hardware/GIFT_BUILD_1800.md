@@ -31,9 +31,9 @@ side with right-angle connectors instead of straight back.
 | FlightAware Pro Stick Plus | SMA female port |
 | Stubby SMA whip + right-angle SMA adapter | screws straight onto the dongle, no coax |
 | VK-162 USB GPS puck | ~$15 |
-| 5V 3A USB supply | a real one, not a phone charger |
-| Panel-mount USB-C or barrel jack + short pigtail | mains entry through the case wall |
-| IP68 cable gland or O-ring bulkhead | seals the power entry (see build one's notes) |
+| Official Raspberry Pi 5V supply | outputs 5.1V to offset cable drop |
+| Panel-mount USB-C socket with pigtail | threaded bulkhead, dust cap; power entry |
+| SPST rocker switch, panel mount | on the 5V positive line, inside the case |
 | M3 heat-set inserts, M3x8 screws | lid panel mounting |
 | PETG filament, matte black | lid panel, base tray, label plates |
 
@@ -42,15 +42,18 @@ wall, and the Pi feeds everything.
 
 ## Power
 
+External 5V brick, panel USB-C socket on the case, switch inside. No
+mains voltage enters the enclosure. Full detail in `POWER_WIRING.md`.
+
 ```
-wall supply (5V 3A)
-      |
-  panel-mount entry (sealed gland)
-      |
-  Raspberry Pi
-      |-- USB -> screen (power + touch, one cable)
-      |-- USB -> Pro Stick Plus -> stubby antenna
-      |-- USB -> GPS puck
+wall supply (5.1V) --> user's USB-C cable --> panel socket
+                                                  |
+                                          rocker switch (V+ only)
+                                                  |
+                                          Raspberry Pi
+                                              |-- USB -> screen (power + touch)
+                                              |-- USB -> Pro Stick Plus -> antenna
+                                              |-- USB -> GPS puck
 ```
 
 If `vcgencmd get_throttled` returns anything but `0x0` under load, add a
