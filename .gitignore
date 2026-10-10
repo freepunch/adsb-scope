@@ -5,3 +5,4 @@ venv/
 coverage.json
 config.json
 .DS_Store
+alerts.json

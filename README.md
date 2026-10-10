@@ -88,6 +88,27 @@ python tests/test_core.py
 Covers the geometry, the SBS parser, state merging/expiry, and coverage
 persistence — everything except the Qt widgets.
 
+## Airspace alerts (UAS operating area)
+
+An encroachment monitor for protecting your own model's airspace,
+centred on `store.home_lat/home_lon` (which GPS updates live, so the
+rings follow you). Levels: ADVISORY 3 nm / 2000 ft AGL, WARNING
+1.5 nm / 1000 ft or projected CPA under 0.5 nm within 90 s, ALERT
+0.5 nm / 700 ft with a repeating tone, plus LOST for a threat that
+stops reporting. Settings live in `alerts.json`.
+
+**Set `site_elev_ft` once and `altimeter_inhg` every session.** SBS
+altitude is pressure altitude referenced to 29.92, so a 0.30 inHg error
+is a 300 ft error in every AGL figure.
+
+**Zoom to 5 or 10 nm when flying.** The alert rings are 0.5 to 3 nm, so
+at the 100 nm default they collapse into a dot at the centre of the
+scope. The alarm still works at any range; it is only the visual rings
+that need the zoom.
+
+Honest limits: only aircraft the receiver hears. No ADS-B Out means
+invisible. Use it as a backup to watching the sky, never as clearance.
+
 ## Field deployment
 
 See `deploy/FIELD.md` for boot-start setup, GPS, and making the SD card

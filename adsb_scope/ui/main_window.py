@@ -1,11 +1,21 @@
 """Main window: split scope + data panel, with coverage on a second view."""
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-                               QSplitter, QPushButton, QStackedWidget)
+                               QSplitter, QPushButton, QStackedWidget, QLabel)
 
 from .scope_view import ScopeView
+from .alert_scope_view import AlertScopeView
+from .alert_panel import AlertPanel
 from .detail_panel import DetailPanel
 from .coverage_view import CoverageView
+
+# The 3D tab pulls in pyqtgraph/PyOpenGL/numpy. On a Pi without them the
+# app must still start, so the import itself is guarded.
+try:
+    from .scope3d_view import Scope3DView
+    SCOPE3D_IMPORT_ERR = None
+except Exception as _exc:
+    Scope3DView, SCOPE3D_IMPORT_ERR = None, str(_exc)
 
 NEON = "#00ff88"
 DARK = f"""
@@ -38,7 +48,12 @@ class MainWindow(QMainWindow):
         self.resize(1024, 600)
         self.setStyleSheet(DARK)
 
-        self.scope = ScopeView(store, cfg.max_range_nm, cfg.render_fps)
+        # alert panel owns the AlertMonitor and its 1 Hz timer
+        self.alert_panel = AlertPanel(store)
+        self.monitor = self.alert_panel.monitor
+
+        self.scope = AlertScopeView(store, cfg.max_range_nm, self.monitor,
+                                    cfg.render_fps)
         self.panel = DetailPanel(store)
 
         # scope click -> panel detail; panel row click -> scope highlight
@@ -58,25 +73,36 @@ class MainWindow(QMainWindow):
         radar_page = QWidget()
         radar_layout = QVBoxLayout(radar_page)
         radar_layout.setContentsMargins(0, 0, 0, 0)
-        radar_layout.addWidget(split)
+        radar_layout.addWidget(self.alert_panel)
+        radar_layout.addWidget(split, stretch=1)
 
         self.pages = QStackedWidget()
         self.pages.addWidget(radar_page)                 # 0
         self.pages.addWidget(CoverageView(tracker))      # 1
+        if Scope3DView is not None:
+            self.pages.addWidget(Scope3DView(store, self.monitor))   # 2
+        else:
+            missing = QLabel(
+                f"3D view unavailable: {SCOPE3D_IMPORT_ERR}\n"
+                "pip install pyqtgraph PyOpenGL numpy")
+            missing.setAlignment(Qt.AlignCenter)
+            missing.setStyleSheet("color:#00ff88; font-size:14px;")
+            self.pages.addWidget(missing)                            # 2
 
         # bottom bar: view switch, touch-sized
         bar = QHBoxLayout()
         self.radar_btn = QPushButton("RADAR")
         self.cov_btn = QPushButton("COVERAGE")
-        for btn in (self.radar_btn, self.cov_btn):
+        self.three_d_btn = QPushButton("3D")
+        self.nav_buttons = (self.radar_btn, self.cov_btn, self.three_d_btn)
+        for btn in self.nav_buttons:
             btn.setMinimumHeight(42)
             btn.setCheckable(True)
             btn.setStyleSheet(NAV_CSS)
+            bar.addWidget(btn)
         self.radar_btn.setChecked(True)
-        self.radar_btn.clicked.connect(lambda: self._show_page(0))
-        self.cov_btn.clicked.connect(lambda: self._show_page(1))
-        bar.addWidget(self.radar_btn)
-        bar.addWidget(self.cov_btn)
+        for i, btn in enumerate(self.nav_buttons):
+            btn.clicked.connect(lambda _=False, idx=i: self._show_page(idx))
         bar.addStretch()
 
         central = QWidget()
@@ -99,8 +125,8 @@ class MainWindow(QMainWindow):
 
     def _show_page(self, index: int):
         self.pages.setCurrentIndex(index)
-        self.radar_btn.setChecked(index == 0)
-        self.cov_btn.setChecked(index == 1)
+        for i, btn in enumerate(self.nav_buttons):
+            btn.setChecked(i == index)
 
     def _on_scope_click(self, hex_id: str):
         self.scope.set_selected(hex_id)
@@ -121,7 +147,8 @@ class MainWindow(QMainWindow):
             f"aircraft: {len(self.store.snapshot())}   "
             f"messages: {self.store.message_count:,}"
             f"{gps_state}   "
-            f"pos: {self.store.home_lat:.3f}, {self.store.home_lon:.3f}")
+            f"pos: {self.store.home_lat:.3f}, {self.store.home_lon:.3f}   "
+            f"alerts: {self.monitor.max_level().name}")
 
     def keyPressEvent(self, event):
         if event.key() in (Qt.Key_Plus, Qt.Key_Equal):

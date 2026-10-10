@@ -162,15 +162,18 @@ class ScopeView(QWidget):
         p.drawPolygon(body)
         p.restore()
 
+    def scope_geometry(self) -> tuple[float, float, float]:
+        """(centre x, centre y, radius px). Subclasses that overlay the scope
+        must use this rather than recomputing, or their overlays drift."""
+        side = min(self.width(), self.height())
+        return self.width() / 2, self.height() / 2, side / 2 - 18
+
     def paintEvent(self, _event):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
         p.fillRect(self.rect(), BG)
 
-        # keep the scope square and fully inside the pane, centred
-        side = min(self.width(), self.height())
-        cx, cy = self.width() / 2, self.height() / 2
-        radius = side / 2 - 18
+        cx, cy, radius = self.scope_geometry()
 
         font = QFont()
         font.setPointSize(8)
