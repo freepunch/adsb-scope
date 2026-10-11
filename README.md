@@ -1,4 +1,5 @@
-# adsb-scope
+# AirAware (adsb-scope)
+
 
 A desktop ADS-B viewer and **antenna measurement tool** in Python/Qt.
 Point it at any dump1090/readsb decoder and it gives you a live radar
@@ -60,6 +61,7 @@ and restart:
 | max_range_nm   | scope radius                             |
 | stale_seconds  | drop aircraft unheard for this long      |
 | hide_cursor    | blank the mouse pointer (default true)   |
+| splash         | AirAware boot animation (default true)   |
 | fullscreen     | start fullscreen (kiosk)                 |
 | render_fps     | scope redraw rate; 15 on a Pi 3          |
 

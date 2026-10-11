@@ -19,6 +19,7 @@ class Config:
     gps_enabled: bool = False    # read position from gpsd (cyberdeck mode)
     fullscreen: bool = False     # start as a fullscreen kiosk
     hide_cursor: bool = True     # blank the pointer (touch panel, no mouse)
+    splash: bool = True          # AirAware boot animation at startup
     render_fps: int = 25         # scope redraw rate; lower to ~15 on a Pi 3
 
 

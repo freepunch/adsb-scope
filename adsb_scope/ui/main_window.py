@@ -44,7 +44,7 @@ class MainWindow(QMainWindow):
         self.client = client
         self.tracker = tracker
         self.gps = gps
-        self.setWindowTitle("adsb-scope")
+        self.setWindowTitle("AirAware")
         self.resize(1024, 600)
         self.setStyleSheet(DARK)
 
