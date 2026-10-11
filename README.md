@@ -111,6 +111,21 @@ that need the zoom.
 Honest limits: only aircraft the receiver hears. No ADS-B Out means
 invisible. Use it as a backup to watching the sky, never as clearance.
 
+## Field-changeable settings
+
+Design principle: anything that may need changing away from a keyboard
+must be reachable from the screen. The SETUP page covers the altimeter
+setting, site elevation, and the alert and sound toggles, all with
+touch-sized steppers. Changes apply to the running monitor immediately;
+SAVE writes `alerts.json`.
+
+If the overlay filesystem is enabled, SAVE will fail and say so plainly
+rather than pretending it worked. Settings still apply for the session.
+To make them stick, disable the overlay, save, and re-enable it.
+
+Also on-screen: scope zoom and range filter (the +/- buttons on the
+scope), and the coverage reset button.
+
 ## Field deployment
 
 See `deploy/FIELD.md` for boot-start setup, GPS, and making the SD card

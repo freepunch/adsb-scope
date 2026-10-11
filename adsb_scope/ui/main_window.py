@@ -8,6 +8,7 @@ from .alert_scope_view import AlertScopeView
 from .alert_panel import AlertPanel
 from .detail_panel import DetailPanel
 from .coverage_view import CoverageView
+from .settings_view import SettingsView
 
 # The 3D tab pulls in pyqtgraph/PyOpenGL/numpy. On a Pi without them the
 # app must still start, so the import itself is guarded.
@@ -88,13 +89,17 @@ class MainWindow(QMainWindow):
             missing.setAlignment(Qt.AlignCenter)
             missing.setStyleSheet("color:#00ff88; font-size:14px;")
             self.pages.addWidget(missing)                            # 2
+        self.settings_view = SettingsView(self.monitor)
+        self.pages.addWidget(self.settings_view)                     # 3
 
         # bottom bar: view switch, touch-sized
         bar = QHBoxLayout()
         self.radar_btn = QPushButton("RADAR")
         self.cov_btn = QPushButton("COVERAGE")
         self.three_d_btn = QPushButton("3D")
-        self.nav_buttons = (self.radar_btn, self.cov_btn, self.three_d_btn)
+        self.settings_btn = QPushButton("SETUP")
+        self.nav_buttons = (self.radar_btn, self.cov_btn,
+                            self.three_d_btn, self.settings_btn)
         for btn in self.nav_buttons:
             btn.setMinimumHeight(42)
             btn.setCheckable(True)

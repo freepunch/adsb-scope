@@ -71,6 +71,17 @@ def load_settings() -> AlertSettings:
     return s
 
 
+def save_settings(s: AlertSettings) -> bool:
+    """Write settings back to alerts.json. Returns False if the write failed
+    (read-only overlay filesystem, wrong owner), so the UI can say so rather
+    than silently pretending it saved."""
+    try:
+        ALERTS_PATH.write_text(json.dumps(asdict(s), indent=2))
+        return True
+    except OSError:
+        return False
+
+
 # ---------------------------------------------------------------- geometry
 
 def to_local_nm(home_lat, home_lon, lat, lon):
