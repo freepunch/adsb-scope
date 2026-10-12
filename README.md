@@ -99,9 +99,22 @@ rings follow you). Levels: ADVISORY 3 nm / 2000 ft AGL, WARNING
 0.5 nm / 700 ft with a repeating tone, plus LOST for a threat that
 stops reporting. Settings live in `alerts.json`.
 
-**Set `site_elev_ft` once and `altimeter_inhg` every session.** SBS
-altitude is pressure altitude referenced to 29.92, so a 0.30 inHg error
-is a 300 ft error in every AGL figure.
+**Both altitude references calibrate themselves.** Site elevation comes
+from a 3D GPS fix. The altimeter setting is derived from the aircraft
+themselves: most broadcast barometric *and* geometric altitude, and the
+gap between them, once the GPS-reported geoid separation is removed,
+gives the local pressure correction. The median across several aircraft
+is used, outliers dropped, implausible results rejected.
+
+Note these are not interchangeable. Site elevation converts MSL to AGL
+for your position; the altimeter setting converts the *aircraft's*
+pressure altitude to MSL and is a property of today's atmosphere. With
+a perfectly known elevation, a 1.0 inHg pressure error is still 1000 ft
+of AGL error.
+
+Both can be switched to MANUAL on the SETUP page, which is also where
+the alert radii and ceilings are adjustable. Ring changes are
+session-only unless saved.
 
 **Zoom to 5 or 10 nm when flying.** The alert rings are 0.5 to 3 nm, so
 at the 100 nm default they collapse into a dot at the centre of the

@@ -31,8 +31,11 @@ class Level(IntEnum):
 class AlertSettings:
     enabled: bool = True
     # Site + pressure correction (SBS altitude is pressure altitude @ 29.92)
-    site_elev_ft: Optional[float] = None    # SET THIS (field elevation, ft MSL)
-    altimeter_inhg: float = 29.92           # local altimeter setting from METAR/ATIS
+    site_elev_ft: Optional[float] = None    # ft MSL; auto-set from a 3D GPS fix
+    altimeter_inhg: float = 29.92           # auto-derived from traffic, or set by hand
+    auto_site_elev: bool = True             # take site elevation from GPS
+    auto_altimeter: bool = True             # derive altimeter from aircraft baro/geom
+    aircraft_json_url: str = "http://127.0.0.1/tar1090/data/aircraft.json"
     # Advisory ring
     advisory_nm: float = 3.0
     advisory_agl_ft: float = 2000.0

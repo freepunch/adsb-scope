@@ -54,6 +54,7 @@ class StepperRow(QWidget):
         self.step = step
         self.fmt = fmt
         self.lo, self.hi = lo, hi
+        self.locked = False     # set while an auto source owns this value
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 8, 0, 8)
@@ -108,12 +109,19 @@ class StepperRow(QWidget):
         self.value = v
         self._refresh()
 
+    def set_locked(self, locked: bool):
+        """Grey out the buttons while an automatic source owns this value."""
+        self.locked = locked
+        self._refresh()
+
     def _refresh(self):
         self.readout.setText(self.fmt.format(self.value))
-        if self.lo is not None:
-            self.minus.setEnabled(self.value > self.lo)
-        if self.hi is not None:
-            self.plus.setEnabled(self.value < self.hi)
+        if self.locked:
+            self.minus.setEnabled(False)
+            self.plus.setEnabled(False)
+            return
+        self.minus.setEnabled(self.lo is None or self.value > self.lo)
+        self.plus.setEnabled(self.hi is None or self.value < self.hi)
 
 
 def _divider() -> QFrame:
@@ -146,16 +154,36 @@ class SettingsView(QWidget):
         lay = QVBoxLayout(body)
         lay.setContentsMargins(0, 0, 10, 0)
 
+        self.auto_alt_btn = QPushButton()
+        self.auto_elev_btn = QPushButton()
+        for b in (self.auto_alt_btn, self.auto_elev_btn):
+            b.setMinimumHeight(44)
+            b.setCheckable(True)
+            b.setStyleSheet(ACTION_BTN)
+            b.setFocusPolicy(Qt.NoFocus)
+        self.auto_alt_btn.clicked.connect(self._toggle_auto_altimeter)
+        self.auto_elev_btn.clicked.connect(self._toggle_auto_elevation)
+        auto_row = QHBoxLayout()
+        auto_row.addWidget(self.auto_alt_btn)
+        auto_row.addWidget(self.auto_elev_btn)
+        lay.addLayout(auto_row)
+
+        self.auto_status = QLabel("Auto-calibration starting...")
+        self.auto_status.setStyleSheet(HINT_CSS)
+        self.auto_status.setWordWrap(True)
+        lay.addWidget(self.auto_status)
+        lay.addWidget(_divider())
+
         self.altimeter = StepperRow(
-            "Altimeter setting", "inHg from the nearest METAR. Set this every "
-            "session: 0.30 off is 300 ft of AGL error.",
+            "Altimeter setting", "Derived from traffic reporting both baro and "
+            "geometric altitude. Switch to MANUAL to enter a METAR value.",
             s.altimeter_inhg, 0.01, "{:.2f}", 27.50, 31.50)
         self.altimeter.changed.connect(self._on_altimeter)
         lay.addWidget(self.altimeter)
         lay.addWidget(_divider())
 
         self.elevation = StepperRow(
-            "Site elevation", "Feet MSL at the flying site. Each press steps 50 ft.",
+            "Site elevation", "Feet MSL at the site, from a 3D GPS fix. MANUAL steps 50 ft.",
             s.site_elev_ft if s.site_elev_ft is not None else 0.0,
             50.0, "{:.0f} ft", -300.0, 15000.0)
         self.elevation.changed.connect(self._on_elevation)
@@ -174,6 +202,25 @@ class SettingsView(QWidget):
         self.alerts_btn.clicked.connect(self._toggle_alerts)
         self.sound_btn.clicked.connect(self._toggle_sound)
         lay.addLayout(toggles)
+        lay.addWidget(_divider())
+
+        rings = QLabel("ALERT RINGS")
+        rings.setStyleSheet(f"color:{NEON}; font-size:13px; font-weight:bold;"
+                            " letter-spacing:2px;")
+        lay.addWidget(rings)
+
+        self.ring_rows = {}
+        for key, title, step, fmt, lo, hi in (
+                ("advisory_nm", "Advisory radius", 0.5, "{:.1f} nm", 0.5, 20.0),
+                ("advisory_agl_ft", "Advisory ceiling", 250.0, "{:.0f} ft AGL", 250.0, 10000.0),
+                ("warning_nm", "Warning radius", 0.25, "{:.2f} nm", 0.25, 10.0),
+                ("warning_agl_ft", "Warning ceiling", 100.0, "{:.0f} ft AGL", 100.0, 5000.0),
+                ("alert_nm", "Alert radius", 0.1, "{:.2f} nm", 0.1, 5.0),
+                ("alert_agl_ft", "Alert ceiling", 100.0, "{:.0f} ft AGL", 100.0, 3000.0)):
+            row = StepperRow(title, "", getattr(s, key), step, fmt, lo, hi)
+            row.changed.connect(lambda v, k=key: self._set_ring(k, v))
+            lay.addWidget(row)
+            self.ring_rows[key] = row
         lay.addWidget(_divider())
 
         save_row = QHBoxLayout()
@@ -195,6 +242,7 @@ class SettingsView(QWidget):
 
         scroll.setWidget(body)
         outer.addWidget(scroll)
+        self._refresh_auto_status()
         self._refresh_toggles()
 
     # ---------- handlers: edit the live settings object ----------
@@ -217,12 +265,58 @@ class SettingsView(QWidget):
         self._refresh_toggles()
         self._dirty()
 
+    def _set_ring(self, key: str, value: float):
+        setattr(self.monitor.settings, key, value)
+        self._dirty()
+
+    def _toggle_auto_altimeter(self):
+        s = self.monitor.settings
+        s.auto_altimeter = not s.auto_altimeter
+        self._refresh_toggles()
+        self._dirty()
+
+    def _toggle_auto_elevation(self):
+        s = self.monitor.settings
+        s.auto_site_elev = not s.auto_site_elev
+        self._refresh_toggles()
+        self._dirty()
+
+    def note_auto_altimeter(self, inhg: float, samples: int):
+        """Called when the calibrator derives a setting from traffic."""
+        if self.monitor.settings.auto_altimeter:
+            self.altimeter.set_value(inhg)
+        self._auto_alt_text = (f"altimeter {inhg:.2f} from {samples} aircraft")
+        self._refresh_auto_status()
+
+    def note_auto_elevation(self, elev_ft: float):
+        if self.monitor.settings.auto_site_elev:
+            self.elevation.set_value(round(elev_ft))
+        self._auto_elev_text = f"elevation {elev_ft:.0f} ft from GPS"
+        self._refresh_auto_status()
+
+    def _refresh_auto_status(self):
+        parts = [t for t in (getattr(self, "_auto_alt_text", None),
+                             getattr(self, "_auto_elev_text", None)) if t]
+        self.auto_status.setText(
+            "   |   ".join(parts) if parts
+            else "Auto-calibration waiting: needs a 3D GPS fix and traffic "
+                 "reporting both barometric and geometric altitude.")
+
     def _refresh_toggles(self):
         s = self.monitor.settings
         self.alerts_btn.setText("ALERTS: ON" if s.enabled else "ALERTS: OFF")
         self.alerts_btn.setChecked(s.enabled)
         self.sound_btn.setText("SOUND: ON" if s.sound else "SOUND: MUTED")
         self.sound_btn.setChecked(s.sound)
+        self.auto_alt_btn.setText(
+            "ALTIMETER: AUTO" if s.auto_altimeter else "ALTIMETER: MANUAL")
+        self.auto_alt_btn.setChecked(s.auto_altimeter)
+        self.auto_elev_btn.setText(
+            "ELEVATION: AUTO" if s.auto_site_elev else "ELEVATION: MANUAL")
+        self.auto_elev_btn.setChecked(s.auto_site_elev)
+        # manual steppers are pointless while auto is overwriting them
+        self.altimeter.set_locked(s.auto_altimeter)
+        self.elevation.set_locked(s.auto_site_elev)
 
     def _dirty(self):
         self.status.setText("Unsaved. Changes are live now but will revert "

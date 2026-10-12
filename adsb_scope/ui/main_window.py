@@ -45,6 +45,7 @@ class MainWindow(QMainWindow):
         self.client = client
         self.tracker = tracker
         self.gps = gps
+        self.calibrator = None
         self.setWindowTitle("AirAware")
         self.resize(1024, 600)
         self.setStyleSheet(DARK)
@@ -127,6 +128,22 @@ class MainWindow(QMainWindow):
         self._feed_timer = QTimer(self)
         self._feed_timer.timeout.connect(self._feed_coverage)
         self._feed_timer.start(1000)
+
+    # ---- auto-calibration callbacks (called from worker threads' owners) ----
+
+    def on_altimeter_estimate(self, inhg: float, sample_count: int):
+        """A derived altimeter setting from observed traffic."""
+        s = self.monitor.settings
+        if s.auto_altimeter:
+            s.altimeter_inhg = inhg
+        self.settings_view.note_auto_altimeter(inhg, sample_count)
+
+    def on_site_elevation(self, elev_ft: float):
+        """Site elevation from a 3D GPS fix."""
+        s = self.monitor.settings
+        if s.auto_site_elev:
+            s.site_elev_ft = round(elev_ft)
+        self.settings_view.note_auto_elevation(elev_ft)
 
     def _show_page(self, index: int):
         self.pages.setCurrentIndex(index)

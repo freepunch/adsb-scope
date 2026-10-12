@@ -86,6 +86,65 @@ def test_lost_contact():
     assert m.update(now + 120) == []                      # released after hold time
 
 
+# ---------- auto-calibration ----------
+
+def test_estimate_altimeter_from_aircraft():
+    from adsb_scope.baro_cal import estimate_altimeter
+    # true setting 30.12 => aircraft sit 200 ft above their pressure altitude
+    acs = [{"alt_baro": 3000, "alt_geom": 3200},
+           {"alt_baro": 7500, "alt_geom": 7700},
+           {"alt_baro": 12000, "alt_geom": 12200},
+           {"alt_baro": 22000, "alt_geom": 22190}]
+    est = estimate_altimeter(acs, geoid_sep_ft=0.0)
+    assert est is not None and abs(est - 30.12) < 0.02, est
+
+
+def test_geoid_separation_is_applied():
+    from adsb_scope.baro_cal import estimate_altimeter
+    # geom is height above the ellipsoid; with a -105 ft separation the
+    # same raw numbers imply a different pressure correction
+    acs = [{"alt_baro": 3000, "alt_geom": 3200}] * 4
+    no_sep = estimate_altimeter(acs, geoid_sep_ft=0.0)
+    with_sep = estimate_altimeter(acs, geoid_sep_ft=-105.0)
+    assert abs(no_sep - 30.12) < 0.02
+    assert abs(with_sep - 30.225) < 0.02, with_sep
+
+
+def test_estimate_rejects_thin_and_implausible_data():
+    from adsb_scope.baro_cal import estimate_altimeter
+    assert estimate_altimeter([], 0.0) is None
+    assert estimate_altimeter([{"alt_baro": 3000, "alt_geom": 3200}], 0.0) is None
+    # aircraft on the ground report the string "ground" for alt_baro
+    assert estimate_altimeter([{"alt_baro": "ground", "alt_geom": 50}] * 5, 0.0) is None
+    # absurd delta -> outside the plausible pressure band -> rejected
+    assert estimate_altimeter([{"alt_baro": 3000, "alt_geom": 9000}] * 5, 0.0) is None
+
+
+def test_estimate_drops_a_single_bad_aircraft():
+    from adsb_scope.baro_cal import estimate_altimeter
+    acs = [{"alt_baro": 3000, "alt_geom": 3200},
+           {"alt_baro": 7500, "alt_geom": 7700},
+           {"alt_baro": 12000, "alt_geom": 12210},
+           {"alt_baro": 9000, "alt_geom": 11500}]   # badly mis-equipped
+    est = estimate_altimeter(acs, 0.0)
+    assert est is not None and abs(est - 30.12) < 0.03, est
+
+
+def test_gps_altitude_parsing():
+    from adsb_scope.gps_client import parse_gpsd_altitude
+    line = ('{"class":"TPV","mode":3,"lat":40.0,"lon":-76.8,'
+            '"altMSL":122.0,"altHAE":90.0,"geoidSep":-32.0}')
+    elev_ft, sep_ft = parse_gpsd_altitude(line)
+    assert abs(elev_ft - 400.2) < 1.0, elev_ft
+    assert abs(sep_ft - (-105.0)) < 1.0, sep_ft
+    # a 2D fix carries no altitude
+    assert parse_gpsd_altitude('{"class":"TPV","mode":2,"lat":40.0,"lon":-76.8}') is None
+    # altMSL missing but derivable from HAE and separation
+    derived = parse_gpsd_altitude(
+        '{"class":"TPV","mode":3,"altHAE":90.0,"geoidSep":-32.0}')
+    assert derived is not None and abs(derived[0] - 400.2) < 1.0
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for f in fns:
