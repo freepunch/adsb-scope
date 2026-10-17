@@ -62,6 +62,12 @@ and restart:
 | stale_seconds  | drop aircraft unheard for this long      |
 | hide_cursor    | blank the mouse pointer (default true)   |
 | splash         | AirAware boot animation (default true)   |
+
+The boot animation plays a square-wave startup chime, gated by the
+alert `sound` setting, so muting on the SETUP page silences it too.
+Audio goes through the OS player (paplay/aplay/pw-play, afplay,
+winsound) rather than QtMultimedia, which hard-crashes on machines
+with no sound server. No sound server simply means a silent boot.
 | fullscreen     | start fullscreen (kiosk)                 |
 | render_fps     | scope redraw rate; 15 on a Pi 3          |
 

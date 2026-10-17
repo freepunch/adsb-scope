@@ -16,6 +16,8 @@ from PySide6.QtWidgets import QWidget
 
 import math
 
+from ..audio import play_startup_sound
+
 # Period-correct palette: saturated, few colours, no gradients.
 BARS = [
     QColor(192, 192, 192), QColor(192, 192, 0), QColor(0, 192, 192),
@@ -58,13 +60,18 @@ class SplashScreen(QWidget):
     TEST_END = 88      # 1.8 s of boot lines
     FADE_END = 100     # 0.6 s fade
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, sound: bool = True):
         super().__init__(parent)
+        self.sound = sound
+        self.sound_played = False
         self.setWindowTitle("AirAware")
         self.setStyleSheet("background:#060a08;")
         self.setFocusPolicy(Qt.StrongFocus)
         self.tick = 0
         self._done = False
+        if self.sound:
+            # best effort: no sound server simply means a silent boot
+            self.sound_played = play_startup_sound()
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._advance)
         self._timer.start(50)

@@ -74,7 +74,7 @@ def main():
     if cfg.splash:
         # Built and shown first so the deck has something on screen while
         # the receiver connects. Keep a reference or it is garbage collected.
-        splash = SplashScreen()
+        splash = SplashScreen(sound=window.monitor.settings.sound)
         app._splash = splash
         if fullscreen:
             splash.showFullScreen()

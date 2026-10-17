@@ -177,6 +177,52 @@ def test_range_filter_hides_distant_aircraft():
     assert panel.table.rowCount() == 1             # far one filtered out
 
 
+def test_chiptune_waveform():
+    """The boot chime must be the right length, audible, and actually square."""
+    import struct, wave
+    from pathlib import Path
+    from adsb_scope.audio import make_chiptune, STARTUP_NOTES, RATE
+
+    out = Path("/tmp/_test_chime.wav")
+    if out.exists():
+        out.unlink()
+    make_chiptune(out, STARTUP_NOTES)
+    with wave.open(str(out)) as w:
+        assert w.getnchannels() == 1 and w.getsampwidth() == 2
+        assert w.getframerate() == RATE
+        n = w.getnframes()
+        samples = struct.unpack(f"<{n}h", w.readframes(n))
+
+    expected_s = sum(ms for _, ms in STARTUP_NOTES) / 1000
+    assert abs(n / RATE - expected_s) < 0.02
+
+    peak = max(abs(s) for s in samples)
+    assert 5000 < peak < 32767          # audible, not clipping
+
+    # the rest between the arpeggio and the final note issilence
+    rest_at = sum(ms for _, ms in STARTUP_NOTES[:6]) / 1000
+    i0, i1 = int(rest_at * RATE) + 50, int((rest_at + 0.04) * RATE) - 50
+    assert max(abs(s) for s in samples[i0:i1]) == 0
+
+    # sustain portion sits at the rails: square, not sine
+    note_n = int(RATE * STARTUP_NOTES[0][1] / 1000)
+    sustain = samples[200:int(note_n * 0.45)]
+    peak_s = max(abs(x) for x in sustain)
+    assert sum(1 for s in sustain if abs(s) > 0.9 * peak_s) / len(sustain) > 0.95
+    out.unlink()
+
+
+def test_splash_respects_sound_flag():
+    import os
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtWidgets import QApplication
+    from adsb_scope.ui.splash import SplashScreen
+    app = QApplication.instance() or QApplication([])
+    s = SplashScreen(sound=False)
+    assert s.sound_played is False
+    s.skip()
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for fn in fns:

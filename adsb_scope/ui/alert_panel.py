@@ -16,15 +16,7 @@ from PySide6.QtWidgets import QLabel, QApplication
 from ..alerts import AlertMonitor, Level
 
 
-def _player_cmd():
-    """Use the OS's own audio player in a subprocess. Avoids QtMultimedia,
-    which can hard-crash the app on machines with no sound server."""
-    if sys.platform == "darwin" and shutil.which("afplay"):
-        return ["afplay"]
-    for cmd in ("paplay", "aplay", "pw-play"):
-        if shutil.which(cmd):
-            return [cmd] + (["-q"] if cmd == "aplay" else [])
-    return None
+from ..audio import player_cmd as _player_cmd
 
 STYLE = {
     Level.NONE:     ("#0b1a0b", "#58c058"),
